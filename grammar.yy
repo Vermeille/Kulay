@@ -1,22 +1,21 @@
 %{
 
-#include <string>
 #include <stdexcept>
-#include <iostream>
-#include <map>
+
+#include "ast.h"
 
 int yylex();
 void yyerror(const char* error);
 
-std::map<std::string, int> vars;
-
-int g_res;
+Block* g_res;
 
 %}
 
 %union{
     int i_val;
     std::string* str;
+    Expr* expr;
+    Block* block;
 }
 
 %token <str> ID
@@ -24,39 +23,61 @@ int g_res;
 %token PLUS "+"
 %token MINUS "-"
 %token MUL "*"
+%token OPAR "("
+%token CPAR ")"
+%token EQ "="
+%token SEMICOLON ";"
 
-%type <i_val> Term
-%type <i_val> Factors
-%type <i_val> Adds
-%type <i_val> Expr
+%type <expr> Term
+%type <expr> Factors
+%type <expr> Adds
+%type <expr> Expr
+%type <expr> Affectation
+%type <expr> Instr
+%type <block> Blocks
 
-%start Expr
-
-%left PLUS
-%left MUL
+%start All
 
 %%
 
+All:
+   Blocks               { g_res = $1; }
+   ;
+
+Blocks:
+    Blocks Instr        { $1->Append($2); $$ = $1; }
+    | /* empty */       { $$ = new Block; }
+    ;
+
+Instr:
+     Affectation        { $$ = $1; }
+     | Expr             { $$ = $1; }
+     ;
+
+Affectation:
+    ID "=" Expr ";"     { $$ = new VarSet(*$1, $3); delete $1; }
+    ;
+
 Expr:
-    Adds                { $$ = $1; g_res = $1; }
+    Adds                { $$ = $1; }
     ;
 
 Adds:
-    Factors "+" Adds    { $$ = $1 + $3; }
-    | Factors "-" Adds    { $$ = $1 - $3; }
+    Adds "+" Factors    { $$ = new Add($1, $3); }
+    | Adds "-" Factors  { $$ = new Sub($1, $3); }
     | Factors           { $$ = $1; }
     ;
 
 Factors:
-    Term "*" Factors    { $$ = $1 * $3; }
+    Factors "*" Term    { $$ = new Mul($1, $3); }
     | Term              { $$ = $1; }
     ;
 
 Term:
-    ID          { $$ = vars[*$1]; }
-    | NUMBER    { $$ = $1; }
+    ID                  { $$ = new VarGet(*$1); delete $1; }
+    | NUMBER            { $$ = new IntLit($1); }
+    | "(" Expr ")"      { $$ = $2; }
     ;
-
 
 %%
 
@@ -65,9 +86,11 @@ void yyerror(const char* error) {
 }
 
 int main() {
-    vars["caca"] = 3;
-    std::cout << "caca = " << vars["caca"] << std::endl;
     yyparse();
-    std::cout << g_res << std::endl;
+    Context ctx;
+    g_res->PrettyPrint();
+    g_res->Eval(ctx);
+    ctx.Dump();
+
     return 0;
 }

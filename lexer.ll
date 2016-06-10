@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cstdlib>
 
+#include "ast.h"
 #include "parser.hpp"
 
 %}
@@ -10,15 +11,19 @@
 %option noyywrap
 
 num [0-9]+
-id [a-zA-Z][a-zA-Z0-9_]+
+id [a-zA-Z][a-zA-Z0-9_]*
 
 %%
 
 {id}    { yylval.str = new std::string(yytext); return ID; }
-\+      { return PLUS; }
-\-      { return MINUS; }
-\*      { return MUL; }
 {num}   { yylval.i_val = std::atoi(yytext); return NUMBER; }
+"+"     { return PLUS; }
+"-"     { return MINUS; }
+"*"     { return MUL; }
+"("     { return OPAR; }
+")"     { return CPAR; }
+"="     { return EQ; }
+";"     { return SEMICOLON; }
 
 [ \t\n\r] /* nothing */
 

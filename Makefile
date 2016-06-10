@@ -1,5 +1,5 @@
 CXX=clang++
-CXXFLAGS=-Wall -Wextra -ggdb3
+CXXFLAGS=-Wall -Wextra -ggdb3 -std=c++14
 
 BISON_GEN=parser.cpp
 FLEX_GEN=lexer.cpp
