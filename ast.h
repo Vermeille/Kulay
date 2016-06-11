@@ -42,7 +42,13 @@ class Identifier {
         const std::string& str() const { return name_; }
 };
 
-class Expr {
+class Instr {
+    public:
+    virtual void PrettyPrint() const = 0;
+    virtual Value Eval(Context& ctx) const = 0;
+};
+
+class Expr : public Instr {
     public:
         virtual void PrettyPrint() const = 0;
         virtual Value Eval(Context& ctx) const = 0;
@@ -144,7 +150,7 @@ class Sub : public Binop {
         }
 };
 
-class VarSet : public Expr {
+class VarSet : public Instr {
     private:
         Identifier var_;
         std::unique_ptr<Expr> expr_;
@@ -167,10 +173,10 @@ class VarSet : public Expr {
 };
 
 class Block {
-    std::vector<std::unique_ptr<Expr>> instrs_;
+    std::vector<std::unique_ptr<Instr>> instrs_;
 
     public:
-        void Append(Expr* e) {
+        void Append(Instr* e) {
             instrs_.emplace_back(e);
         }
 
@@ -188,3 +194,20 @@ class Block {
         }
 };
 
+class Print : public Instr {
+    std::unique_ptr<Expr> e_;
+
+    public:
+        Print(Expr* e) : e_(e) {}
+
+        void PrettyPrint() const {
+            std::cout << "print ";
+            e_->PrettyPrint();
+            std::cout << ";\n";
+        }
+
+        Value Eval(Context& ctx) const {
+            std::cout << e_->Eval(ctx).GetInt() << "\n";
+            return Value();
+        }
+};

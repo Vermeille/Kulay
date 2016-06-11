@@ -15,6 +15,7 @@ id [a-zA-Z][a-zA-Z0-9_]*
 
 %%
 
+"print" { return PRINT; }
 {id}    { yylval.str = new std::string(yytext); return ID; }
 {num}   { yylval.i_val = std::atoi(yytext); return NUMBER; }
 "+"     { return PLUS; }

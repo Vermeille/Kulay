@@ -1,2 +1,5 @@
 caca = 12;
 aaaa = 1 + 2 * 3 + caca;
+
+print aaaa;
+print caca;

@@ -15,6 +15,7 @@ Block* g_res;
     int i_val;
     std::string* str;
     Expr* expr;
+    Instr* instr;
     Block* block;
 }
 
@@ -27,13 +28,14 @@ Block* g_res;
 %token CPAR ")"
 %token EQ "="
 %token SEMICOLON ";"
+%token PRINT "print"
 
 %type <expr> Term
 %type <expr> Factors
 %type <expr> Adds
 %type <expr> Expr
-%type <expr> Affectation
-%type <expr> Instr
+%type <instr> Affectation
+%type <instr> Instr
 %type <block> Blocks
 
 %start All
@@ -50,12 +52,13 @@ Blocks:
     ;
 
 Instr:
-     Affectation        { $$ = $1; }
-     | Expr             { $$ = $1; }
+     Affectation ";"    { $$ = $1; }
+     | Expr ";"         { $$ = $1; }
+     | "print" Expr ";" { $$ = new Print($2);; }
      ;
 
 Affectation:
-    ID "=" Expr ";"     { $$ = new VarSet(*$1, $3); delete $1; }
+    ID "=" Expr         { $$ = new VarSet(*$1, $3); delete $1; }
     ;
 
 Expr:
@@ -88,9 +91,6 @@ void yyerror(const char* error) {
 int main() {
     yyparse();
     Context ctx;
-    g_res->PrettyPrint();
     g_res->Eval(ctx);
-    ctx.Dump();
-
     return 0;
 }
