@@ -1,0 +1,3 @@
+print b
+    where b = a + a + 3 + c
+        where a = 1, c = 2;

@@ -15,9 +15,14 @@ id [a-zA-Z][a-zA-Z0-9_]*
 
 %%
 
+"in"    { return IN; }
+"let"   { return LET; }
+"where" { return WHERE; }
 "print" { return PRINT; }
 {id}    { yylval.str = new std::string(yytext); return ID; }
 {num}   { yylval.i_val = std::atoi(yytext); return NUMBER; }
+"{"     { return OBRACK; }
+"}"     { return CBRACK; }
 "+"     { return PLUS; }
 "-"     { return MINUS; }
 "*"     { return MUL; }
@@ -25,6 +30,7 @@ id [a-zA-Z][a-zA-Z0-9_]*
 ")"     { return CPAR; }
 "="     { return EQ; }
 ";"     { return SEMICOLON; }
+","     { return COMA; }
 
 [ \t\n\r] /* nothing */
 

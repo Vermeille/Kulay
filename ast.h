@@ -24,7 +24,13 @@ class Context {
         }
 
         Value GetVar(const std::string& name) const {
-            return vars_.find(name)->second;
+            auto val = vars_.find(name);
+
+            if (val == vars_.end()) {
+                throw std::runtime_error("can't find a value for " + name);
+            }
+
+            return val->second;
         }
 
         void Dump() const {
@@ -42,16 +48,46 @@ class Identifier {
         const std::string& str() const { return name_; }
 };
 
-class Instr {
-    public:
-    virtual void PrettyPrint() const = 0;
-    virtual Value Eval(Context& ctx) const = 0;
-};
-
-class Expr : public Instr {
+class InstrBody {
     public:
         virtual void PrettyPrint() const = 0;
         virtual Value Eval(Context& ctx) const = 0;
+};
+
+class Decls;
+
+class Instr {
+    std::unique_ptr<Decls> let_;
+    std::unique_ptr<InstrBody> body_;
+    std::unique_ptr<Decls> where_;
+
+    public:
+        Instr(Decls* let, InstrBody* body, Decls* where);
+
+        virtual void PrettyPrint() const;
+
+        virtual Value Eval(Context& ctx) const;
+};
+
+class Expr {
+    public:
+        virtual void PrettyPrint() const = 0;
+        virtual Value Eval(Context& ctx) const = 0;
+};
+
+class ExprInstr : public InstrBody {
+    std::unique_ptr<Expr> e_;
+
+    public:
+        ExprInstr(Expr* e) : e_(e) {}
+
+        virtual void PrettyPrint() const {
+            e_->PrettyPrint();
+        }
+
+        virtual Value Eval(Context& ctx) const {
+            return e_->Eval(ctx);
+        }
 };
 
 class IntLit : public Expr {
@@ -150,13 +186,13 @@ class Sub : public Binop {
         }
 };
 
-class VarSet : public Instr {
+class VarSet : public InstrBody {
     private:
         Identifier var_;
-        std::unique_ptr<Expr> expr_;
+        std::unique_ptr<Instr> expr_;
 
     public:
-        VarSet(const std::string& vg, Expr* e) : var_(vg), expr_(e) {}
+        VarSet(const std::string& vg, Instr* e) : var_(vg), expr_(e) {}
 
         virtual void PrettyPrint() const {
             std::cout << "(" << var_.str() << ") = (";
@@ -172,7 +208,7 @@ class VarSet : public Instr {
 
 };
 
-class Block {
+class Block : public InstrBody {
     std::vector<std::unique_ptr<Instr>> instrs_;
 
     public:
@@ -187,14 +223,15 @@ class Block {
             }
         }
 
-        void Eval(Context& ctx) const {
+        Value Eval(Context& ctx) const {
             for (auto& i : instrs_) {
                 i->Eval(ctx);
             }
+            return Value();
         }
 };
 
-class Print : public Instr {
+class Print : public InstrBody {
     std::unique_ptr<Expr> e_;
 
     public:
@@ -209,5 +246,25 @@ class Print : public Instr {
         Value Eval(Context& ctx) const {
             std::cout << e_->Eval(ctx).GetInt() << "\n";
             return Value();
+        }
+};
+
+class Decls {
+    std::vector<std::unique_ptr<VarSet>> decls_;
+    public:
+        void Append(VarSet* vs) {
+            decls_.emplace_back(vs);
+        }
+
+        void PrettyPrint() const {
+            for (auto& d : decls_) {
+                d->PrettyPrint();
+            }
+        }
+
+        void Eval(Context& ctx) const {
+            for (auto& d : decls_) {
+                d->Eval(ctx);
+            }
         }
 };

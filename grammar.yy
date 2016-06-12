@@ -11,12 +11,17 @@ Block* g_res;
 
 %}
 
+%define parse.error verbose
+
 %union{
     int i_val;
     std::string* str;
     Expr* expr;
     Instr* instr;
     Block* block;
+    Decls* decls;
+    VarSet* affectation;
+    InstrBody* instr_body;
 }
 
 %token <str> ID
@@ -28,37 +33,67 @@ Block* g_res;
 %token CPAR ")"
 %token EQ "="
 %token SEMICOLON ";"
+%token COMA ","
 %token PRINT "print"
+%token OBRACK "{"
+%token CBRACK "}"
+%token LET "let"
+%token IN "in"
+%token WHERE "where"
 
 %type <expr> Term
 %type <expr> Factors
 %type <expr> Adds
 %type <expr> Expr
-%type <instr> Affectation
+%type <affectation> Affectation
+%type <instr_body> InstrBody
 %type <instr> Instr
-%type <block> Blocks
+%type <block> Instrs
+%type <decls> LetClause
+%type <decls> WhereClause
+%type <decls> Affectations
 
 %start All
 
 %%
 
 All:
-   Blocks               { g_res = $1; }
+   Instrs               { g_res = $1; }
    ;
 
-Blocks:
-    Blocks Instr        { $1->Append($2); $$ = $1; }
+Instrs:
+    Instrs Instr ";"    { $1->Append($2); $$ = $1; }
     | /* empty */       { $$ = new Block; }
     ;
 
 Instr:
-     Affectation ";"    { $$ = $1; }
-     | Expr ";"         { $$ = $1; }
-     | "print" Expr ";" { $$ = new Print($2);; }
+    LetClause InstrBody WhereClause { $$ = new Instr($1, $2, $3); }
+    ;
+
+LetClause:
+    "let" Affectations "in" { $$ = $2; }
+    | /* empty */           { $$ = nullptr; }
+    ;
+
+WhereClause:
+    "where" Affectations    { $$ = $2; }
+    | /* empty */           { $$ = nullptr; }
+    ;
+
+InstrBody:
+     Affectation        { $$ = $1; }
+     | Expr             { $$ = new ExprInstr($1); }
+     | "print" Expr     { $$ = new Print($2); }
+     | "{" Instrs "}"   { $$ = $2; }
      ;
 
 Affectation:
-    ID "=" Expr         { $$ = new VarSet(*$1, $3); delete $1; }
+    ID "=" Instr        { $$ = new VarSet(*$1, $3); delete $1; }
+    ;
+
+Affectations:
+    Affectations "," Affectation    { $1->Append($3); $$ = $1; }
+    | Affectation       { $$ = new Decls; $$->Append($1); }
     ;
 
 Expr:
