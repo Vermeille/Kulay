@@ -1,0 +1,3 @@
+print b + z
+    where   b = { a + a + 3 + c where c = 1, a = 2 },
+            z = 42

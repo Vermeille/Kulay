@@ -1,0 +1,7 @@
+insert_sort &xs {
+    while i < len xs {
+        swap &xs[min xs] &xs[i];
+        inc &i;
+    } where i = 0;
+    xs
+}

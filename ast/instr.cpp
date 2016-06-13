@@ -5,28 +5,18 @@ Instr::Instr(Decls* let, InstrBody* body, Decls* where)
 }
 
 void Instr::PrettyPrint() const {
+    std::cout << "{";
     if (let_) {
-        std::cout << "let ";
+        std::cout << "let [";
         let_->PrettyPrint();
-        std::cout << " in ";
+        std::cout << "] in ";
     }
     body_->PrettyPrint();
     if (where_) {
-        std::cout << " where ";
+        std::cout << " where [";
         where_->PrettyPrint();
+        std::cout << "]";
     }
-    std::cout << ";\n";
-}
-
-Value Instr::Eval(Context& ctx) const {
-    if (where_) {
-        where_->Eval(ctx);
-    }
-
-    if (let_) {
-        let_->Eval(ctx);
-    }
-
-    return body_->Eval(ctx);
+    std::cout << ";}";
 }
 

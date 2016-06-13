@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <cstdlib>
 
-#include "ast.h"
+#include "ast/ast.h"
 #include "parser.hpp"
 
 %}

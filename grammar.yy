@@ -2,7 +2,8 @@
 
 #include <stdexcept>
 
-#include "ast.h"
+#include "ast/ast.h"
+#include "ast/interpretervisitor.h"
 
 int yylex();
 void yyerror(const char* error);
@@ -12,6 +13,7 @@ Block* g_res;
 %}
 
 %define parse.error verbose
+%debug
 
 %union{
     int i_val;
@@ -62,8 +64,8 @@ All:
    ;
 
 Instrs:
-    Instrs Instr ";"    { $1->Append($2); $$ = $1; }
-    | /* empty */       { $$ = new Block; }
+    Instrs ";" Instr    { $1->Append($3); $$ = $1; }
+    | Instr             { $$ = new Block; $$->Append($1); }
     ;
 
 Instr:
@@ -88,7 +90,7 @@ InstrBody:
      ;
 
 Affectation:
-    ID "=" Instr        { $$ = new VarSet(*$1, $3); delete $1; }
+    ID "=" InstrBody    { $$ = new VarSet(*$1, $3); delete $1; }
     ;
 
 Affectations:
@@ -124,8 +126,10 @@ void yyerror(const char* error) {
 }
 
 int main() {
+    //yydebug = 1;
     yyparse();
-    Context ctx;
-    g_res->Eval(ctx);
+    g_res->PrettyPrint();
+    InterpreterVisitor v;
+    g_res->Accept(v);
     return 0;
 }
