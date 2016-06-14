@@ -1,0 +1,7 @@
+{
+    print a;
+
+    let a = 2 in print a;
+
+    print a;
+} where a = 1;
