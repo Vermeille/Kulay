@@ -51,6 +51,7 @@ Block* g_res;
 %type <instr_body> InstrBody
 %type <instr> Instr
 %type <block> Instrs
+%type <block> InstrList
 %type <decls> LetClause
 %type <decls> WhereClause
 %type <decls> Affectations
@@ -64,9 +65,15 @@ All:
    ;
 
 Instrs:
-    Instrs ";" Instr    { $1->Append($3); $$ = $1; }
-    | Instr             { $$ = new Block; $$->Append($1); }
+    InstrList OptionalSemicolon     { $$ = $1; }
     ;
+
+InstrList:
+    InstrList ";" Instr     { $1->Append($3); $$ = $1; }
+    | Instr                 { $$ = new Block; $$->Append($1); }
+    ;
+
+OptionalSemicolon: ";" | /* empty */;
 
 Instr:
     LetClause InstrBody WhereClause { $$ = new Instr($1, $2, $3); }
