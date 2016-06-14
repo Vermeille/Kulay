@@ -128,7 +128,7 @@ void yyerror(const char* error) {
 int main() {
     //yydebug = 1;
     yyparse();
-    g_res->PrettyPrint();
+    //g_res->PrettyPrint();
     InterpreterVisitor v;
     g_res->Accept(v);
     return 0;

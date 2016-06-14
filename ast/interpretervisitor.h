@@ -1,35 +1,84 @@
 #pragma once
 
+#include <unordered_map>
+#include <string>
+#include <iostream>
+
+#include "ast.h"
+
 class Value {
+    enum class Type {
+        Int,
+        Void
+    };
+    enum Type type_;
     int val_;
 
     public:
-        Value() {}
-        Value(int x) : val_(x) {}
-        int GetInt() const { return val_; }
+        Value() : type_(Type::Void) {}
+        Value(int x) : type_(Type::Int), val_(x) {}
+        int GetInt() const {
+            if (type_ != Type::Int) {
+                throw std::runtime_error("Not an integer value");
+            }
+            return val_;
+        }
 };
 
 class Context {
-    std::unordered_map<std::string, Value> vars_;
+    std::vector<std::unordered_map<std::string, Value>> vars_;
 
     public:
+        void PushScope() {
+            vars_.push_back(std::unordered_map<std::string, Value>());
+        }
+
+        void PopScope() {
+            vars_.pop_back();
+        }
+
+        void DeclNewVar(const std::string& name, Value v) {
+            vars_.back()[name] = v;
+        }
+
+        Value& FindVar(const std::string& name) {
+            auto it = vars_.rbegin();
+            while (it != vars_.rend()) {
+                auto found = it->find(name);
+                if (found != it->end()) {
+                    return found->second;
+                }
+                ++it;
+            }
+            throw std::runtime_error(std::string("Can't find ") + name);
+        }
+
+        const Value& FindVar(const std::string& name) const {
+            auto it = vars_.rbegin();
+            while (it != vars_.rend()) {
+                auto found = it->find(name);
+                if (found != it->end()) {
+                    return found->second;
+                }
+                ++it;
+            }
+            throw std::runtime_error(std::string("Can't find ") + name);
+        }
+
         void SetVar(const std::string& name, Value value) {
-            vars_[name] = value;
+            FindVar(name) = value;
         }
 
         Value GetVar(const std::string& name) const {
-            auto val = vars_.find(name);
-
-            if (val == vars_.end()) {
-                throw std::runtime_error("can't find a value for " + name);
-            }
-
-            return val->second;
+            return FindVar(name);
         }
 
         void Dump() const {
-            for (auto& i : vars_) {
-                std::cout << i.first << " = " << i.second.GetInt() << "\n";
+            for (auto& j : vars_) {
+                std::cout << "==\n";
+                for (auto& i : j) {
+                    std::cout << i.first << " = " << i.second.GetInt() << "\n";
+                }
             }
         }
 };
@@ -57,7 +106,8 @@ class InterpreterVisitor : public DefaultVisitor {
 
         virtual void Visit(Decls& ds) {
             for (auto& d : ds) {
-                d->Accept(*this);
+                d->expr()->Accept(*this);
+                ctx_.DeclNewVar(d->var().str(), ret_);
             }
         }
 
@@ -102,6 +152,7 @@ class InterpreterVisitor : public DefaultVisitor {
         }
 
         virtual void Visit(Instr& i) {
+            ctx_.PushScope();
             if (i.where()) {
                 i.where()->Accept(*this);
             }
@@ -111,6 +162,7 @@ class InterpreterVisitor : public DefaultVisitor {
             }
 
             i.body()->Accept(*this);
+            ctx_.PopScope();
         }
 
         virtual void Visit(Binop& b) {
